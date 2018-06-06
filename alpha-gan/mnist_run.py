@@ -1,16 +1,24 @@
 import argparse
+<<<<<<< HEAD
 import functools
+=======
+>>>>>>> 2573dc0d50f750ec48d42a577ce1094708c952c8
 import os
 import time
 
 from matplotlib import cm
 from matplotlib import figure
 from matplotlib.backends import backend_agg
+<<<<<<< HEAD
 import numpy as np
+=======
+import numpy
+>>>>>>> 2573dc0d50f750ec48d42a577ce1094708c952c8
 import tensorflow as tf
 
 from codebase.alphagan import make_generator, make_discriminator
 import codebase.losses as loss
+<<<<<<< HEAD
 from codebase import mnist_dataset
 
 from tensorflow.contrib.learn.python.learn.datasets import mnist
@@ -18,6 +26,12 @@ from tensorflow.contrib.learn.python.learn.datasets import mnist
 IMAGE_SHAPE = [28, 28, 1]
 
 def generator_fn(z):
+=======
+
+from tensorflow.contrib.learn.python.learn.datasets import mnist
+
+def generator_fn():
+>>>>>>> 2573dc0d50f750ec48d42a577ce1094708c952c8
     """
     Args:
         z: A `float`-like `Tensor` [batch_size, 1, 1, latent_size]
@@ -54,7 +68,11 @@ def encoder_fn(images, latent_size):
 
     return net
 
+<<<<<<< HEAD
 def code_discriminator_fn(z):
+=======
+def code_discriminator(z):
+>>>>>>> 2573dc0d50f750ec48d42a577ce1094708c952c8
     net = z
     net = tf.layers.dense(net, 1)
 
@@ -62,18 +80,30 @@ def code_discriminator_fn(z):
 
 
 def save_imgs(x, fname):
+<<<<<<< HEAD
     n = x.shape[0]
+=======
+    n = x.shapes[0]
+>>>>>>> 2573dc0d50f750ec48d42a577ce1094708c952c8
     fig = figure.Figure(figsize=(n, 1), frameon=False)
     canvas = backend_agg.FigureCanvasAgg(fig)
     for i in range(n):
         ax = fig.add_subplot(1, n, i+1)
         ax.imshow(
+<<<<<<< HEAD
             x[i].squeeze(),
+=======
+            x[i].sqieeze(),
+>>>>>>> 2573dc0d50f750ec48d42a577ce1094708c952c8
             interpolation='none',
             cmap=cm.get_cmap('binary'))
         ax.axis('off')
     canvas.print_figure(fname, format='png')
+<<<<<<< HEAD
     print('saved {:s}'.format(fname))
+=======
+    print('saved %s'.format(fname))
+>>>>>>> 2573dc0d50f750ec48d42a577ce1094708c952c8
 
 def visualize_training(
     images, reconstructed_images, log_dir, prefix, viz_num=5):
@@ -82,16 +112,33 @@ def visualize_training(
         os.path.join(log_dir, '{}_inputs.png'.format(prefix)))
     save_imgs(
         reconstructed_images[:viz_num],
+<<<<<<< HEAD
         os.path.join(log_dir, '{}_reconstructions.png'.format(prefix)))
 
 def build_input_pipline(training_dataset, batch_size, heldout_size):
     """Build an Iterator switching between train and heldout data."""
     # Build an iterator over training batches
+=======
+        os.path.joint(log_dir, '{}_reconstructions.png'.format(prefix)))
+
+def build_input_pipline(mnist_data, batch_size, heldout_size):
+    """Build an Iterator switching between train and heldout data."""
+    # Build an iterator over training batches
+    training_dataset = tf.data.Dataset.from_tensor_slices(
+        (mnist_data.train.images, np.int32(mnist_data.train.labels)))
+>>>>>>> 2573dc0d50f750ec48d42a577ce1094708c952c8
     training_batches = training_dataset.repeat().batch(batch_size)
     training_iterator = training_batches.make_one_shot_iterator()
 
     # Build a iterator over the heldout set with batch size=heldout_size
+<<<<<<< HEAD
     heldout_frozen = training_dataset.take(heldout_size).repeat().batch(heldout_size)
+=======
+    heldout_dataset = tf.data.Dataset.from_tensor_slices(
+        (mnist_data.validation.images, np.int32(mnist_data.validation.labels)))
+    heldout_frozen  = (heldout_dataset.take(heldout_size)).
+                       repeat().batch(heldout_size))
+>>>>>>> 2573dc0d50f750ec48d42a577ce1094708c952c8
     heldout_iterator = heldout_frozen.make_one_shot_iterator()
 
     handle = tf.placeholder(tf.string, shape=[])
@@ -104,6 +151,7 @@ def build_input_pipline(training_dataset, batch_size, heldout_size):
 
 def main():
     parser = argparse.ArgumentParser(description='Alpha GAN example: MNIST')
+<<<<<<< HEAD
     parser.add_argument('--data_dir', default=os.path.join(os.getcwd(), 'data/mnist'))
     parser.add_argument('--model_dir',
                         default=os.path.join('checkpoint/mnist', '2018-06-05-1547'),
@@ -121,6 +169,10 @@ def main():
     parser.add_argument('--viz_steps', type=int, default=500)
 
 
+=======
+    parser.add_argument('--learning_rate', type=float, default=0.01,
+                        help='Initial learning rate')
+>>>>>>> 2573dc0d50f750ec48d42a577ce1094708c952c8
     args = parser.parse_args()
 
     if tf.gfile.Exists(args.model_dir):
