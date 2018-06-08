@@ -10,7 +10,7 @@ import numpy as np
 import numpy
 import tensorflow as tf
 
-from codebase.alphagan import make_generator, make_discriminator
+from codebase.alphagan import make_generator, make_discriminator, make_gan
 import codebase.losses as loss
 from codebase import mnist_dataset
 
@@ -112,7 +112,7 @@ def main():
     parser = argparse.ArgumentParser(description='Alpha GAN example: MNIST')
     parser.add_argument('--data_dir', default=os.path.join(os.getcwd(), 'data/mnist'))
     parser.add_argument('--model_dir',
-                        default=os.path.join('checkpoint/mnist', '2018-06-05-1547'),
+                        default=os.path.join('checkpoint/mnist', '2018-06-08-1604'),
                         help='Directory to put the model')
 
     # model parameters
@@ -121,10 +121,10 @@ def main():
     parser.add_argument('--heldout_size', type=int, default=10000)
 
     # train parameters
-    parser.add_argument('--learning_rate', type=float, default=0.01,
+    parser.add_argument('--learning_rate', type=float, default=0.1,
                         help='Initial learning rate')
-    parser.add_argument('--max_steps', type=int, default=100)
-    parser.add_argument('--viz_steps', type=int, default=500)
+    parser.add_argument('--max_steps', type=int, default=1000)
+    parser.add_argument('--viz_steps', type=int, default=50)
 
     args = parser.parse_args()
 
@@ -144,28 +144,32 @@ def main():
         noise  = tf.random_normal([args.batch_size, 1, 1, args.latent_size])
 
         # model generator
-        generator = make_generator(generator_fn, noise)
-        discriminator = make_discriminator(
-            discriminator_fn, generator.outputs, images)
-
+        generator, discriminator = make_gan(
+            generator_fn,
+            discriminator_fn,
+            images,
+            noise)
+        
         # model encoder
-        encoder = make_generator(
+        encoder, code_discriminator = make_gan(
             functools.partial(encoder_fn, latent_size=args.latent_size),
-            images, scope='encoder')
-        code_discriminator = make_discriminator(
-            code_discriminator_fn, encoder.outputs,
-            noise, scope='code_discriminator')
-
+            code_discriminator_fn,
+            noise,
+            images,
+            generator_scope='encoder',
+            discriminator_scope='code_discriminator')
+       
         with tf.variable_scope(generator.scope, reuse=True):
             reconstructed_data = generator.fn(encoder.outputs)
 
         with tf.variable_scope(discriminator.scope, reuse=True):
             d_rec_outputs = discriminator.fn(reconstructed_data)
-
-        g_loss = loss.alphagan_generator_loss(
-            discriminator.gen_outputs, d_rec_outputs,
-            images, reconstructed_data, add_summaries=True)
-
+        
+        with tf.name_scope('alphagan_generator_loss'):
+            g_loss = loss.alphagan_generator_loss(
+                discriminator.gen_outputs, d_rec_outputs,
+                images, reconstructed_data, add_summaries=True)
+        
         d_loss = loss.alphagan_discriminator_loss(
             discriminator.real_outputs, discriminator.gen_outputs,
             d_rec_outputs, add_summaries=True)
@@ -194,10 +198,6 @@ def main():
         code_d_train_op  = code_d_optimizer.minimize(
             code_d_loss, var_list=code_discriminator.variables)
 
-        # summary
-        tf.summary.image('images', images, max_outputs=1)
-        tf.summary.image('generated_images', generator.outputs, max_outputs=1)
-        tf.summary.image('reconstructed_images', reconstructed_data, max_outputs=1)
         summary = tf.summary.merge_all()
 
         init    = tf.global_variables_initializer()
