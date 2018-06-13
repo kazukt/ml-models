@@ -145,20 +145,22 @@ def main():
             scope='alphagan_code_discriminator_loss',
             add_summaries=True)
 
-        g_optimizer = tf.train.AdamOptimizer(args.learning_rate)
-        g_train_op  = g_optimizer.minimize(
-            g_loss, var_list=generator.variables)
+        update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+        with tf.control_dependencies(update_ops):
+            g_optimizer = tf.train.AdamOptimizer(args.learning_rate)
+            g_train_op  = g_optimizer.minimize(
+                g_loss, var_list=generator.variables)
 
-        d_optimizer = tf.train.AdamOptimizer(args.learning_rate)
-        d_train_op  = d_optimizer.minimize(
-            d_loss, var_list=discriminator.variables)
+            d_optimizer = tf.train.AdamOptimizer(args.learning_rate)
+            d_train_op  = d_optimizer.minimize(
+                d_loss, var_list=discriminator.variables)
 
-        e_optimizer = tf.train.AdamOptimizer(args.learning_rate)
-        e_train_op  = e_optimizer.minimize(e_loss, var_list=encoder.variables)
+            e_optimizer = tf.train.AdamOptimizer(args.learning_rate)
+            e_train_op  = e_optimizer.minimize(e_loss, var_list=encoder.variables)
 
-        code_d_optimizer = tf.train.AdamOptimizer(args.learning_rate)
-        code_d_train_op  = code_d_optimizer.minimize(
-            code_d_loss, var_list=code_discriminator.variables)
+            code_d_optimizer = tf.train.AdamOptimizer(args.learning_rate)
+            code_d_train_op  = code_d_optimizer.minimize(
+                code_d_loss, var_list=code_discriminator.variables)
 
         summary = tf.summary.merge_all()
 
