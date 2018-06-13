@@ -34,7 +34,7 @@ def generator_fn(z):
     net = tf.layers.conv2d_transpose(
         net, 32, kernel_size=5, strides=2, activation=tf.nn.relu)
     net = tf.layers.conv2d_transpose(
-        net, 1, kernel_size=4, strides=2, activation=tf.nn.sigmoid)
+        net, 1, kernel_size=4, strides=2, activation=tf.nn.tanh)
 
     return net
 
