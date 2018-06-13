@@ -44,7 +44,7 @@ def discriminator_fn(images):
         net, 32, kernel_size=4, strides=2, activation=tf.nn.relu)
     net = tf.layers.conv2d(
         net, 64, kernel_size=5, strides=2, activation=tf.nn.relu)
-    net = tf.layers.conv2d(net, 1, kernel_size=5, strides=2)
+    net = tf.layers.conv2d(net, 1, kernel_size=5, strides=2, activation=None)
 
     return net
 
@@ -170,7 +170,8 @@ def main():
 
         g_loss = loss.alphagan_generator_loss(
             discriminator.gen_outputs, d_rec_outputs,
-            images, reconstructed_data, add_summaries=True)
+            images, reconstructed_data,
+            reconstructed_weights=5.0, add_summaries=True)
 
         d_loss = loss.alphagan_discriminator_loss(
             discriminator.real_outputs, discriminator.gen_outputs,
@@ -178,7 +179,8 @@ def main():
 
         e_loss = loss.alphagan_encoder_loss(
             code_discriminator.gen_outputs,
-            images, reconstructed_data, add_summaries=True)
+            images, reconstructed_data,
+            reconstructed_weights=5.0, add_summaries=True)
 
         code_d_loss = loss.modified_discriminator_loss(
             code_discriminator.real_outputs,
