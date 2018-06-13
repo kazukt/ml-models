@@ -13,57 +13,10 @@ import tensorflow as tf
 
 from codebase.alphagan import make_gan
 import codebase.losses as loss
+import codebase.networks.mnist as networks
 from codebase import mnist_dataset
 
-from tensorflow.contrib.learn.python.learn.datasets import mnist
-
 IMAGE_SHAPE = [28, 28, 1]
-
-from tensorflow.contrib.learn.python.learn.datasets import mnist
-
-def generator_fn(z):
-    """
-    Args:
-        z: A `float`-like `Tensor` [batch_size, 1, 1, latent_size]
-    Returns:
-        net:
-    """
-    net = z
-    net = tf.layers.conv2d_transpose(
-        net, 64, kernel_size=5, strides=2, activation=tf.nn.relu)
-    net = tf.layers.conv2d_transpose(
-        net, 32, kernel_size=5, strides=2, activation=tf.nn.relu)
-    net = tf.layers.conv2d_transpose(
-        net, 1, kernel_size=4, strides=2, activation=tf.nn.tanh)
-
-    return net
-
-def discriminator_fn(images):
-    net = images
-    net = tf.layers.conv2d(
-        net, 32, kernel_size=4, strides=2, activation=tf.nn.relu)
-    net = tf.layers.conv2d(
-        net, 64, kernel_size=5, strides=2, activation=tf.nn.relu)
-    net = tf.layers.conv2d(net, 1, kernel_size=5, strides=2, activation=None)
-
-    return net
-
-def encoder_fn(images, latent_size):
-    net = images
-    net = tf.layers.conv2d(
-        net, 32, kernel_size=4, strides=2, activation=tf.nn.relu)
-    net = tf.layers.conv2d(
-        net, 64, kernel_size=5, strides=2, activation=tf.nn.relu)
-    net = tf.layers.conv2d(net, latent_size, kernel_size=5, strides=2)
-
-    return net
-
-def code_discriminator_fn(z):
-    net = z
-    net = tf.layers.dense(net, 1)
-
-    return net
-
 
 def save_imgs(x, fname):
     n = x.shape[0]
@@ -144,19 +97,23 @@ def main():
              mnist_data, args.batch_size, args.heldout_size)
 
         images = tf.reshape(images, shape=[-1] + IMAGE_SHAPE)
-        noise  = tf.random_normal([args.batch_size, 1, 1, args.latent_size])
+        noise  = tf.random_normal([args.batch_size, args.latent_size])
+
+        is_training = tf.placeholder(bool)
 
         # model generator
         generator, discriminator = make_gan(
-            generator_fn,
-            discriminator_fn,
+            functools.partial(
+                networks.generator, is_training=is_training),
+            networks.discriminator,
             images,
             noise)
 
         # model encoder
         encoder, code_discriminator = make_gan(
-            functools.partial(encoder_fn, latent_size=args.latent_size),
-            code_discriminator_fn,
+            functools.partial(
+                networks.encoder, latent_size=args.latent_size, is_training=is_training),
+            networks.code_discriminator,
             noise,
             images,
             generator_scope='encoder',
@@ -219,19 +176,19 @@ def main():
 
                 _, e_loss_value = sess.run(
                     [e_train_op, e_loss],
-                    feed_dict={handle: train_handle})
+                    feed_dict={handle: train_handle, is_training: True})
 
                 _, g_loss_value = sess.run(
                     [g_train_op, g_loss],
-                    feed_dict={handle: train_handle})
+                    feed_dict={handle: train_handle, is_training: True})
 
                 _, d_loss_value = sess.run(
                     [d_train_op, d_loss],
-                    feed_dict={handle: train_handle})
+                    feed_dict={handle: train_handle, is_training: True})
 
                 _, code_d_loss_value = sess.run(
                     [code_d_train_op, code_d_loss],
-                    feed_dict={handle: train_handle})
+                    feed_dict={handle: train_handle, is_training: True})
 
                 duration = time.time() - start_time
 
@@ -240,7 +197,8 @@ def main():
                           'Code Discriminator Loss: {:.3f} ({:.3f} sec)'.format(
                               step, d_loss_value, code_d_loss_value, duration))
 
-                    summary_str = sess.run(summary, feed_dict={handle: train_handle})
+                    summary_str = sess.run(
+                        summary, feed_dict={handle: train_handle, is_training: False})
                     summary_writer.add_summary(summary_str, step)
                     summary_writer.flush()
 
@@ -249,7 +207,8 @@ def main():
                     saver.save(sess, checkpoint_file, global_step=step)
 
                     # generator
-                    generated_value = sess.run([generator.outputs])
+                    generated_value = sess.run(
+                        [generator.outputs], {handle: train_handle, is_training: False})
                     save_imgs(
                         generated_value[0][:5],
                         os.path.join(model_dir, 'step{:05d}_generator.png'.format(step)))
@@ -257,7 +216,7 @@ def main():
                     # training data
                     images_value, reconstructions_value = sess.run(
                         [images, reconstructed_data],
-                        feed_dict={handle: train_handle})
+                        feed_dict={handle: train_handle, is_training: False})
                     visualize_training(
                         images_value,
                         reconstructions_value,
@@ -267,7 +226,7 @@ def main():
                     # validation data
                     heldout_images_value, heldout_reconstructions_value = sess.run(
                         [images, reconstructed_data],
-                        feed_dict={handle: heldout_handle})
+                        feed_dict={handle: heldout_handle, is_training: False})
                     visualize_training(
                         heldout_images_value,
                         heldout_reconstructions_value,
