@@ -2,6 +2,7 @@ import argparse
 import functools
 import os
 import time
+from datetime import datetime
 
 from matplotlib import cm
 from matplotlib import figure
@@ -10,7 +11,7 @@ import numpy as np
 import numpy
 import tensorflow as tf
 
-from codebase.alphagan import make_generator, make_discriminator, make_gan
+from codebase.alphagan import make_gan
 import codebase.losses as loss
 from codebase import mnist_dataset
 
@@ -112,7 +113,7 @@ def main():
     parser = argparse.ArgumentParser(description='Alpha GAN example: MNIST')
     parser.add_argument('--data_dir', default=os.path.join(os.getcwd(), 'data/mnist'))
     parser.add_argument('--model_dir',
-                        default=os.path.join('checkpoint/mnist', '2018-06-08-1604'),
+                        default='checkpoint/mnist',
                         help='Directory to put the model')
 
     # model parameters
@@ -128,10 +129,12 @@ def main():
 
     args = parser.parse_args()
 
-    if tf.gfile.Exists(args.model_dir):
-        tf.logging.warn('Deleting old log directory at {}'.format(args.model_dir))
-        tf.gfile.DeleteRecursively(args.model_dir)
-    tf.gfile.MakeDirs(args.model_dir)
+    model_dir =  os.path.join(args.model_dir, datetime.now().strftime('%Y%m%d_%H%M'))
+
+    if tf.gfile.Exists(model_dir):
+        tf.logging.warn('Deleting old log directory at {}'.format(model_dir))
+        tf.gfile.DeleteRecursively(model_dir)
+    tf.gfile.MakeDirs(model_dir)
 
     mnist_data = mnist_dataset.train(args.data_dir)
 
@@ -149,7 +152,7 @@ def main():
             discriminator_fn,
             images,
             noise)
-        
+
         # model encoder
         encoder, code_discriminator = make_gan(
             functools.partial(encoder_fn, latent_size=args.latent_size),
@@ -158,18 +161,17 @@ def main():
             images,
             generator_scope='encoder',
             discriminator_scope='code_discriminator')
-       
+
         with tf.variable_scope(generator.scope, reuse=True):
             reconstructed_data = generator.fn(encoder.outputs)
 
         with tf.variable_scope(discriminator.scope, reuse=True):
             d_rec_outputs = discriminator.fn(reconstructed_data)
-        
-        with tf.name_scope('alphagan_generator_loss'):
-            g_loss = loss.alphagan_generator_loss(
-                discriminator.gen_outputs, d_rec_outputs,
-                images, reconstructed_data, add_summaries=True)
-        
+
+        g_loss = loss.alphagan_generator_loss(
+            discriminator.gen_outputs, d_rec_outputs,
+            images, reconstructed_data, add_summaries=True)
+
         d_loss = loss.alphagan_discriminator_loss(
             discriminator.real_outputs, discriminator.gen_outputs,
             d_rec_outputs, add_summaries=True)
@@ -178,9 +180,10 @@ def main():
             code_discriminator.gen_outputs,
             images, reconstructed_data, add_summaries=True)
 
-        code_d_loss = loss.alphagan_code_discriminator_loss(
+        code_d_loss = loss.modified_discriminator_loss(
             code_discriminator.real_outputs,
             code_discriminator.gen_outputs,
+            scope='alphagan_code_discriminator_loss',
             add_summaries=True)
 
         g_optimizer = tf.train.AdamOptimizer(args.learning_rate)
@@ -203,7 +206,7 @@ def main():
         init    = tf.global_variables_initializer()
         saver   = tf.train.Saver()
         with tf.Session() as sess:
-            summary_writer = tf.summary.FileWriter(args.model_dir, sess.graph)
+            summary_writer = tf.summary.FileWriter(model_dir, sess.graph)
             sess.run(init)
 
             # Run the training loop
@@ -240,14 +243,14 @@ def main():
                     summary_writer.flush()
 
                 if (step + 1) % args.viz_steps == 0 or (step + 1) == args.max_steps:
-                    checkpoint_file = os.path.join(args.model_dir, 'model.ckpt')
+                    checkpoint_file = os.path.join(model_dir, 'model.ckpt')
                     saver.save(sess, checkpoint_file, global_step=step)
 
                     # generator
                     generated_value = sess.run([generator.outputs])
                     save_imgs(
                         generated_value[0][:5],
-                        os.path.join(args.model_dir, 'step{:05d}_generator.png'.format(step)))
+                        os.path.join(model_dir, 'step{:05d}_generator.png'.format(step)))
 
                     # training data
                     images_value, reconstructions_value = sess.run(
@@ -256,7 +259,7 @@ def main():
                     visualize_training(
                         images_value,
                         reconstructions_value,
-                        log_dir=args.model_dir,
+                        log_dir=model_dir,
                         prefix='step{:05d}_train'.format(step))
 
                     # validation data
@@ -266,7 +269,7 @@ def main():
                     visualize_training(
                         heldout_images_value,
                         heldout_reconstructions_value,
-                        log_dir=args.model_dir,
+                        log_dir=model_dir,
                         prefix='step{:05d}_validation'.format(step))
 
 
