@@ -15,7 +15,7 @@ from codebase.alphagan import make_gan
 import codebase.losses as loss
 import codebase.networks.mnist as networks
 from codebase import mnist_dataset
-from codebase.utils import add_image_summaries, add_model_summaries
+from codebase.utils import add_model_summaries
 
 IMAGE_SHAPE = [28, 28, 1]
 
@@ -166,6 +166,10 @@ def main():
         tf.summary.image('generated_images', generator.outputs)
         tf.summary.image('real_images', discriminator.real_data)
         tf.summary.image('reconstructed_data', reconstructed_data)
+        add_model_summaries(generator)
+        add_model_summaries(discriminator)
+        add_model_summaries(encoder)
+        add_model_summaries(code_discriminator)
         summary = tf.summary.merge_all()
 
         init    = tf.global_variables_initializer()

@@ -7,7 +7,7 @@ import tensorflow as tf
 def add_model_summaries(model, scope=None):
     with tf.name_scope(scope):
         for var in model.variables:
-            tf.summary.histogram(var)
+            tf.summary.histogram(var.name, var)
 
 def add_image_summaries(real_images, generated_images, grid_size=4):
     num_images = grid_size ** 2
