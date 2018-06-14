@@ -15,6 +15,7 @@ from codebase.alphagan import make_gan
 import codebase.losses as loss
 import codebase.networks.mnist as networks
 from codebase import mnist_dataset
+from codebase.utils import add_image_summaries, add_model_summaries
 
 IMAGE_SHAPE = [28, 28, 1]
 
@@ -162,6 +163,7 @@ def main():
             code_d_train_op  = code_d_optimizer.minimize(
                 code_d_loss, var_list=code_discriminator.variables)
 
+        add_image_summaries(generator.inputs, generator.outputs)
         summary = tf.summary.merge_all()
 
         init    = tf.global_variables_initializer()
