@@ -163,7 +163,7 @@ def main():
             code_d_train_op  = code_d_optimizer.minimize(
                 code_d_loss, var_list=code_discriminator.variables)
 
-        add_image_summaries(generator.inputs, generator.outputs)
+        tf.summary.image('generated_image', generator.outputs)
         summary = tf.summary.merge_all()
 
         init    = tf.global_variables_initializer()
