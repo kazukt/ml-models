@@ -105,7 +105,7 @@ def main():
         # model generator
         generator, discriminator = make_gan(
             functools.partial(
-                networks.generator, is_training=is_training),
+                networks.generator, training=is_training),
             networks.discriminator,
             images,
             noise)
@@ -129,8 +129,9 @@ def main():
         g_loss = loss.alphagan_generator_loss(
             discriminator.gen_outputs, d_rec_outputs,
             images, reconstructed_data,
-            reconstructed_weights=5.0, add_summaries=True)
-
+            adversarial_weights=1.0e-3,
+            likelihood_weights=1.0, add_summaries=True)
+  
         d_loss = loss.alphagan_discriminator_loss(
             discriminator.real_outputs, discriminator.gen_outputs,
             d_rec_outputs, add_summaries=True)
@@ -138,7 +139,8 @@ def main():
         e_loss = loss.alphagan_encoder_loss(
             code_discriminator.gen_outputs,
             images, reconstructed_data,
-            reconstructed_weights=5.0, add_summaries=True)
+            adversarial_weights=1.0e-3,
+            likelihood_weights=1.0, add_summaries=True)
 
         code_d_loss = loss.modified_discriminator_loss(
             code_discriminator.real_outputs,
@@ -203,6 +205,7 @@ def main():
                 duration = time.time() - start_time
 
                 if step % 100 == 0:
+
                     print('Step: {:>3d} Discriminator Loss: {:.3f} '
                           'Code Discriminator Loss: {:.3f} ({:.3f} sec)'.format(
                               step, d_loss_value, code_d_loss_value, duration))

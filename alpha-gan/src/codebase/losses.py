@@ -139,23 +139,26 @@ def alphagan_encoder_loss(
     discriminator_gen_outputs,
     data,
     reconstructed_data,
-    reconstructed_weights=1.0,
+    adversarial_weights=1.0,
+    likelihood_weights=1.0,
     scope=None,
     loss_collection=tf.GraphKeys.LOSSES,
     reduction=tf.losses.Reduction.SUM_BY_NONZERO_WEIGHTS,
     add_summaries=False):
     with tf.name_scope(
         scope, 'alphagan_encoder_loss',
-        [discriminator_gen_outputs, data, reconstructed_data]):
+        [discriminator_gen_outputs, data, reconstructed_data,
+         adversarial_weights, likelihood_weights]):
         generation_loss = sigmoid_density_ratio(
             discriminator_gen_outputs,
+            adversarial_weights,
             loss_collection=None,
             reduction=reduction)
 
         reconstruction_loss = tf.losses.absolute_difference(
             data,
             reconstructed_data,
-            reconstructed_weights,
+            likelihood_weights,
             loss_collection=None,
             reduction=reduction)
 
@@ -176,8 +179,8 @@ def alphagan_generator_loss(
     discriminator_rec_outputs,
     data,
     reconstructed_data,
-    generated_weights=1.0,
-    reconstructed_weights=1.0,
+    adversarial_weights=1.0,
+    likelihood_weights=1.0,
     scope=None,
     loss_collection=tf.GraphKeys.LOSSES,
     reduction=tf.losses.Reduction.SUM_BY_NONZERO_WEIGHTS,
@@ -186,24 +189,24 @@ def alphagan_generator_loss(
         scope, 'alphagan_generator_loss',
         [discriminator_gen_outputs, discriminator_rec_outputs,
          data, reconstructed_data,
-         generated_weights, reconstructed_weights]) as scope:
+         adversarial_weights, likelihood_weights]) as scope:
         generation_loss = sigmoid_density_ratio(
             discriminator_gen_outputs,
-            generated_weights,
+            adversarial_weights,
             scope,
             loss_collection=None,
             reduction=reduction)
 
         reconstruction_density_loss = sigmoid_density_ratio(
             discriminator_rec_outputs,
-            reconstructed_weights,
+            adversarial_weights,
             scope,
             loss_collection=None,
             reduction=reduction)
 
         reconstruction_loss = tf.losses.absolute_difference(
             data, reconstructed_data,
-            reconstructed_weights,
+            likelihood_weights,
             scope,
             loss_collection=None,
             reduction=reduction)
