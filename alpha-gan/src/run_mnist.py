@@ -78,6 +78,10 @@ def main():
     # train parameters
     parser.add_argument('--learning_rate', type=float, default=0.1,
                         help='Initial learning rate')
+    parser.add_argument('--generator_learning_rate', type=float, default=1.0e-3)
+    parser.add_argument('--discriminator_learning_rate', type=float, default=1.0e-5)
+    parser.add_argument('--encoder_learning_rate', type=float, default=1.0e-3)
+    parser.add_argument('--code_discriminator_learning_rate', type=float, default=1.0e-5)
     parser.add_argument('--max_steps', type=int, default=1000)
     parser.add_argument('--viz_steps', type=int, default=50)
 
@@ -125,12 +129,12 @@ def main():
 
         with tf.variable_scope(discriminator.scope, reuse=True):
             d_rec_outputs = discriminator.fn(reconstructed_data)
-
+        
         g_loss = loss.alphagan_generator_loss(
             discriminator.gen_outputs, d_rec_outputs,
             images, reconstructed_data,
-            adversarial_weights=1.0e-3,
-            likelihood_weights=1.0, add_summaries=True)
+            adversarial_weights=1.0,
+            likelihood_weights=5.0, add_summaries=True)
   
         d_loss = loss.alphagan_discriminator_loss(
             discriminator.real_outputs, discriminator.gen_outputs,
@@ -139,29 +143,40 @@ def main():
         e_loss = loss.alphagan_encoder_loss(
             code_discriminator.gen_outputs,
             images, reconstructed_data,
-            adversarial_weights=1.0e-3,
-            likelihood_weights=1.0, add_summaries=True)
+            adversarial_weights=1.0,
+            likelihood_weights=5.0, add_summaries=True)
 
         code_d_loss = loss.modified_discriminator_loss(
             code_discriminator.real_outputs,
             code_discriminator.gen_outputs,
             scope='alphagan_code_discriminator_loss',
             add_summaries=True)
-
+        """
+        g_loss = loss.modified_generator_loss(
+            discriminator.gen_outputs, scope='alphagan_generator_loss', add_summaries=True)
+        d_loss = loss.modified_discriminator_loss(
+            discriminator.real_outputs, discriminator.gen_outputs,
+            scope='alphagan_discriminator_loss', add_summaries=True)
+        e_loss = loss.modified_generator_loss(
+            code_discriminator.gen_outputs, scope='alphagan_encoder_loss', add_summaries=True)
+        code_d_loss = loss.modified_discriminator_loss(
+            code_discriminator.real_outputs, code_discriminator.gen_outputs,
+            scope='alphagan_code_discriminator_loss', add_summaries=True)
+        """
         update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
         with tf.control_dependencies(update_ops):
-            g_optimizer = tf.train.AdamOptimizer(args.learning_rate)
+            g_optimizer = tf.train.AdamOptimizer(args.generator_learning_rate)
             g_train_op  = g_optimizer.minimize(
                 g_loss, var_list=generator.variables)
 
-            d_optimizer = tf.train.AdamOptimizer(args.learning_rate)
+            d_optimizer = tf.train.AdamOptimizer(args.discriminator_learning_rate)
             d_train_op  = d_optimizer.minimize(
                 d_loss, var_list=discriminator.variables)
 
-            e_optimizer = tf.train.AdamOptimizer(args.learning_rate)
+            e_optimizer = tf.train.AdamOptimizer(args.encoder_learning_rate)
             e_train_op  = e_optimizer.minimize(e_loss, var_list=encoder.variables)
 
-            code_d_optimizer = tf.train.AdamOptimizer(args.learning_rate)
+            code_d_optimizer = tf.train.AdamOptimizer(args.code_discriminator_learning_rate)
             code_d_train_op  = code_d_optimizer.minimize(
                 code_d_loss, var_list=code_discriminator.variables)
 
