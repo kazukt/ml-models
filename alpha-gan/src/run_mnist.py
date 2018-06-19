@@ -151,18 +151,7 @@ def main():
             code_discriminator.gen_outputs,
             scope='alphagan_code_discriminator_loss',
             add_summaries=True)
-        """
-        g_loss = loss.modified_generator_loss(
-            discriminator.gen_outputs, scope='alphagan_generator_loss', add_summaries=True)
-        d_loss = loss.modified_discriminator_loss(
-            discriminator.real_outputs, discriminator.gen_outputs,
-            scope='alphagan_discriminator_loss', add_summaries=True)
-        e_loss = loss.modified_generator_loss(
-            code_discriminator.gen_outputs, scope='alphagan_encoder_loss', add_summaries=True)
-        code_d_loss = loss.modified_discriminator_loss(
-            code_discriminator.real_outputs, code_discriminator.gen_outputs,
-            scope='alphagan_code_discriminator_loss', add_summaries=True)
-        """
+
         update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
         with tf.control_dependencies(update_ops):
             g_optimizer = tf.train.AdamOptimizer(args.generator_learning_rate)
