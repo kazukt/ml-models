@@ -134,7 +134,7 @@ def main():
             discriminator.gen_outputs, d_rec_outputs,
             images, reconstructed_data,
             adversarial_weights=1.0,
-            likelihood_weights=5.0, add_summaries=True)
+            likelihood_weights=1.0e2, add_summaries=True)
   
         d_loss = loss.alphagan_discriminator_loss(
             discriminator.real_outputs, discriminator.gen_outputs,
@@ -144,7 +144,7 @@ def main():
             code_discriminator.gen_outputs,
             images, reconstructed_data,
             adversarial_weights=1.0,
-            likelihood_weights=5.0, add_summaries=True)
+            likelihood_weights=1.0e2, add_summaries=True)
 
         code_d_loss = loss.modified_discriminator_loss(
             code_discriminator.real_outputs,
@@ -162,10 +162,10 @@ def main():
             d_train_op  = d_optimizer.minimize(
                 d_loss, var_list=discriminator.variables)
 
-            e_optimizer = tf.train.AdamOptimizer(args.encoder_learning_rate)
+            e_optimizer = tf.train.AdamOptimizer(args.encoder_learning_rate * 1.0e-2)
             e_train_op  = e_optimizer.minimize(e_loss, var_list=encoder.variables)
 
-            code_d_optimizer = tf.train.AdamOptimizer(args.code_discriminator_learning_rate)
+            code_d_optimizer = tf.train.AdamOptimizer(args.code_discriminator_learning_rate * 1.0e-2)
             code_d_train_op  = code_d_optimizer.minimize(
                 code_d_loss, var_list=code_discriminator.variables)
 
