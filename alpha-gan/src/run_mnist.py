@@ -76,14 +76,13 @@ def main():
     parser.add_argument('--heldout_size', type=int, default=10000)
 
     # train parameters
-    parser.add_argument('--learning_rate', type=float, default=0.1,
-                        help='Initial learning rate')
     parser.add_argument('--generator_learning_rate', type=float, default=1.0e-3)
     parser.add_argument('--discriminator_learning_rate', type=float, default=1.0e-5)
-    parser.add_argument('--encoder_learning_rate', type=float, default=1.0e-3)
-    parser.add_argument('--code_discriminator_learning_rate', type=float, default=1.0e-5)
+    parser.add_argument('--encoder_learning_rate', type=float, default=1.0e-5)
+    parser.add_argument('--code_discriminator_learning_rate', type=float, default=1.0e-7)
     parser.add_argument('--max_steps', type=int, default=1000)
     parser.add_argument('--viz_steps', type=int, default=50)
+    parser.add_argument('--viz_num', type=int, default=5)
 
     args = parser.parse_args()
 
@@ -134,7 +133,7 @@ def main():
             discriminator.gen_outputs, d_rec_outputs,
             images, reconstructed_data,
             adversarial_weights=1.0,
-            likelihood_weights=1.0e2, add_summaries=True)
+            likelihood_weights=1.0e1, add_summaries=True)
   
         d_loss = loss.alphagan_discriminator_loss(
             discriminator.real_outputs, discriminator.gen_outputs,
@@ -144,7 +143,7 @@ def main():
             code_discriminator.gen_outputs,
             images, reconstructed_data,
             adversarial_weights=1.0,
-            likelihood_weights=1.0e2, add_summaries=True)
+            likelihood_weights=1.0e1, add_summaries=True)
 
         code_d_loss = loss.modified_discriminator_loss(
             code_discriminator.real_outputs,
@@ -162,10 +161,10 @@ def main():
             d_train_op  = d_optimizer.minimize(
                 d_loss, var_list=discriminator.variables)
 
-            e_optimizer = tf.train.AdamOptimizer(args.encoder_learning_rate * 1.0e-2)
+            e_optimizer = tf.train.AdamOptimizer(args.encoder_learning_rate)
             e_train_op  = e_optimizer.minimize(e_loss, var_list=encoder.variables)
 
-            code_d_optimizer = tf.train.AdamOptimizer(args.code_discriminator_learning_rate * 1.0e-2)
+            code_d_optimizer = tf.train.AdamOptimizer(args.code_discriminator_learning_rate)
             code_d_train_op  = code_d_optimizer.minimize(
                 code_d_loss, var_list=code_discriminator.variables)
 
@@ -227,7 +226,7 @@ def main():
                     generated_value = sess.run(
                         [generator.outputs], {handle: train_handle, is_training: False})
                     save_imgs(
-                        generated_value[0][:5],
+                        generated_value[0][:args.viz_num],
                         os.path.join(model_dir, 'step{:05d}_generator.png'.format(step)))
 
                     # training data
@@ -238,7 +237,8 @@ def main():
                         images_value,
                         reconstructions_value,
                         log_dir=model_dir,
-                        prefix='step{:05d}_train'.format(step))
+                        prefix='step{:05d}_train'.format(step),
+                        viz_num=args.viz_num)
 
                     # validation data
                     heldout_images_value, heldout_reconstructions_value = sess.run(
@@ -248,7 +248,8 @@ def main():
                         heldout_images_value,
                         heldout_reconstructions_value,
                         log_dir=model_dir,
-                        prefix='step{:05d}_validation'.format(step))
+                        prefix='step{:05d}_validation'.format(step),
+                        viz_num=args.viz_num)
 
 
 if __name__ == '__main__':
