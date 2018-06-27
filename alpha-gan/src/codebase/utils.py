@@ -97,5 +97,5 @@ def images_to_sprite(images, constant_values=0):
   image = np.pad(images, padding, mode='constamt', constant_values=constant_values)
   image = np.reshape(image, (n, n) + image.shape[1:])
   image = np.transpose(image, (0, 2, 1, 3, 4))
-  image = np.reshape(image, (n * height, n * width) + channels)
+  image = np.reshape(image, (n * height, n * width, channels))
   return data
