@@ -70,7 +70,7 @@ def main():
                       help='Directory to put the model')
 
   # model parameters
-  parser.add_argument('--latent_size', type=int, default=2)
+  parser.add_argument('--latent_size', type=int, default=64)
   parser.add_argument('--batch_size', type=int, default=128)
   parser.add_argument('--heldout_size', type=int, default=10000)
 
@@ -188,7 +188,7 @@ def main():
       # Run the Op to initialize the variables.
       sess.run(init)
 
-      # Run the training loop
+      # Run the training loop.
       train_handle = sess.run(training_iterator.string_handle())
       heldout_handle = sess.run(heldout_iterator.string_handle())
       
@@ -255,10 +255,6 @@ def main():
             log_dir=model_dir,
             prefix='step{:05d}_validation'.format(step),
             viz_num=args.viz_num)
-        
-      # Create embeddings
-      embedding_dir = os.path.join(model_dir, 'embeddings', )
-
 
 if __name__ == '__main__':
   main()

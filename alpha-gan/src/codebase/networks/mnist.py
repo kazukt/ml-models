@@ -26,7 +26,7 @@ def discriminator(image):
     net = tf.layers.dense(net, 1)
     return net
 
-def encoder(image, latent_size, weight_decay=2.5e-5, is_training=True):
+def encoder(image, latent_size, is_training=True):
     net = tf.layers.conv2d(image, 64, kernel_size=4, strides=2, padding='same', activation=tf.nn.leaky_relu)
     net = tf.layers.batch_normalization(net, training=is_training)
     net = tf.layers.conv2d(net, 128, kernel_size=4, strides=2, padding='same', activation=tf.nn.leaky_relu)
