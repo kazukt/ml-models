@@ -1,7 +1,9 @@
+
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import numpy as np
 import tensorflow as tf
 
 def add_model_summaries(model, scope=None):
@@ -91,11 +93,11 @@ def images_to_sprite(images, constant_values=0):
     image: A image with any necessary padding.
   
   """
-  height, width, channels = images[1:]
-  n = int(np.ceil(np.sqrt(data.shape[0])))
-  padding = ((0, n ** 2 - data.shape[0]), (0, 0), (0, 0), (0, 0))
-  image = np.pad(images, padding, mode='constamt', constant_values=constant_values)
+  height, width, channels = images.shape[1:]
+  n = int(np.ceil(np.sqrt(images.shape[0])))
+  padding = ((0, n ** 2 - images.shape[0]), (0, 0), (0, 0), (0, 0))
+  image = np.pad(images, padding, mode='constant', constant_values=constant_values)
   image = np.reshape(image, (n, n) + image.shape[1:])
   image = np.transpose(image, (0, 2, 1, 3, 4))
   image = np.reshape(image, (n * height, n * width, channels))
-  return data
+  return image

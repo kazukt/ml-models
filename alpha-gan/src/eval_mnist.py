@@ -3,7 +3,7 @@ import errno
 import functools
 import os
 
-import numpy
+import numpy as np
 import scipy.misc
 import tensorflow as tf
 from tensorflow.contrib.tensorboard.plugins import projector
@@ -20,7 +20,7 @@ parser = argparse.ArgumentParser(description='Eval AlphaGAN example: MNIST')
 parser.add_argument(
   '--data_dir', default=os.path.join(os.getcwd(), 'data/mnist'))
 parser.add_argument(
-  '--model_dir', default='./checkpoint/mnist/', help='Directory to put the model')
+  '--model_dir', default='checkpoint/mnist/', help='Directory to put the model')
 parser.add_argument(
   '--date', type=str)
 
@@ -57,7 +57,7 @@ def main():
       (images, labels, handle, 
        train_iterator, test_iterator) = build_input_pipeline(
          mnist_dataset.train(args.data_dir), 
-         mnist_dataset.test(data_dir), 
+         mnist_dataset.test(args.data_dir), 
          train_batch_size=args.train_batch_size,
          test_batch_size=args.test_batch_size)
     
@@ -65,13 +65,13 @@ def main():
       noise  = tf.random_normal([args.num_images_generated, args.latent_size])
 
     with tf.variable_scope('generator'):
-      generated_images = networks.generator(noise, is_training=False)
+      generated_images = networks.generator(noise, training=False)
     
     with tf.variable_scope('encoder'):
       codes = networks.encoder(images, args.latent_size, is_training=False)
     
     model_saver = tf.train.Saver()
-
+    print('Embedding')
     with tf.Session() as sess:
       model_dir = os.path.join(args.model_dir, args.date)
 
@@ -89,30 +89,33 @@ def main():
         feedable_handle = sess.run(iterator.string_handle())
         imgs, ll, embed = sess.run(
           [images, labels, codes], feed_dict={handle: feedable_handle})
-        embed_tensor = tf.Variable(embed, name='{:s}_embedding'.format(name))
+        embed_tensor = tf.Variable(embed, name='{}_embedding'.format(name))
         embed_tensors.append(embed_tensor)
         sess.run(embed_tensor.initializer)
         embedding = config.embeddings.add()
-        embedding.tensor_name - embed_tensor.name
+        embedding.tensor_name = embed_tensor.name
         embedding.metadata_path = os.path.join(
-          output_dir, '{:s}_labels.tsv'.format(name))
+          output_dir, '{}_labels.tsv'.format(name))
         embedding.sprite.image_path = os.path.join(
-          output_dir, '{:s}_sprite.png'.format(name))
+          output_dir, '{}_sprite.png'.format(name))
         embedding.sprite.single_image_dim.extend([28, 28])
         projector.visualize_embeddings(summary_writer, config)
-
+        
         sprite = images_to_sprite(imgs)
+        sprite = np.reshape(sprite, [sprite.shape[0], sprite.shape[1]])
         scipy.misc.imsave(
-          os.path.join(output_dir, '{:s}_sprite.png'.format(name)), sprite)
-        with open(os.path.join(output_dir, '{:s}_labels.tsv'.format(name)), 'w') as f:
+          os.path.join(output_dir, '{}_sprite.png'.format(name)), sprite)
+        with open(os.path.join(output_dir, '{}_labels.tsv'.format(name)), 'w') as f:
           f.write('Name\tClass\n')
           for i in range(len(ll)):
             f.write('{:6d}\t{:d}\n'.format(i, ll[i]))
         
-      
+      print(output_dir)
       result = sess.run(embed_tensors)
       embedding_saver = tf.train.Saver(embed_tensors)
       embedding_saver.save(sess, os.path.join(output_dir, 'model.ckpt'), 1)
 
 
 
+if __name__ == '__main__':
+  main()
