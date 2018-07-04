@@ -73,6 +73,10 @@ def main():
   parser.add_argument('--latent_size', type=int, default=64)
   parser.add_argument('--batch_size', type=int, default=128)
   parser.add_argument('--heldout_size', type=int, default=10000)
+  
+  # loss parameters
+  parser.add_argument('--likelihood_weight', type=float, default=1.0)
+  parser.add_argument('--adversarial_weight', type=float, default=1.0)
 
   # train parameters
   parser.add_argument('--generator_learning_rate', type=float, default=1.0e-3)
@@ -106,7 +110,7 @@ def main():
 
     # model generator
     generator, discriminator = make_gan(
-      functools.partial(networks.generator, training=is_training),
+      functools.partial(networks.generator, is_training=is_training),
       networks.discriminator,
       images,
       noise)
@@ -130,8 +134,8 @@ def main():
     g_loss = loss.alphagan_generator_loss(
       discriminator.gen_outputs, d_rec_outputs,
       images, reconstructed_data,
-      adversarial_weights=1.0,
-      likelihood_weights=1.0e1, add_summaries=True)
+      adversarial_weights=args.adversarial_weight,
+      likelihood_weights=args.likelihood_weight, add_summaries=True)
 
     d_loss = loss.alphagan_discriminator_loss(
       discriminator.real_outputs, discriminator.gen_outputs,
@@ -140,8 +144,8 @@ def main():
     e_loss = loss.alphagan_encoder_loss(
       code_discriminator.gen_outputs,
       images, reconstructed_data,
-      adversarial_weights=1.0,
-      likelihood_weights=1.0e1, add_summaries=True)
+      adversarial_weights=args.adversarial_weight,
+      likelihood_weights=args.likelihood_weight, add_summaries=True)
 
     code_d_loss = loss.modified_discriminator_loss(
       code_discriminator.real_outputs,
