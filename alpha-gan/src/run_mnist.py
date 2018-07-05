@@ -66,7 +66,7 @@ def main():
   parser = argparse.ArgumentParser(description='Alpha GAN example: MNIST')
   parser.add_argument('--data_dir', default=os.path.join(os.getcwd(), 'data/mnist'))
   parser.add_argument('--model_dir',
-                      default='checkpoint/mnist',
+                      default=os.path.join('checkpoint/mnist', datetime.now().strftime('%Y%m%d_%H%M')),
                       help='Directory to put the model')
 
   # model parameters
@@ -89,8 +89,7 @@ def main():
 
   args = parser.parse_args()
 
-  model_dir =  os.path.join(args.model_dir, datetime.now().strftime('%Y%m%d_%H%M'))
-
+  model_dir = args.model_dir
   if tf.gfile.Exists(model_dir):
     tf.logging.warn('Deleting old log directory at {}'.format(model_dir))
     tf.gfile.DeleteRecursively(model_dir)
