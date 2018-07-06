@@ -65,7 +65,7 @@ def main():
       noise  = tf.random_normal([args.num_images_generated, args.latent_size])
 
     with tf.variable_scope('generator'):
-      generated_images = networks.generator(noise, training=False)
+      generated_images = networks.generator(noise, is_training=False)
     
     with tf.variable_scope('encoder'):
       codes = networks.encoder(images, args.latent_size, is_training=False)
